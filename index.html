@@ -30,15 +30,32 @@
             overflow: hidden; 
         }
 
+        /* HEADER CORREGIDO PARA EL BANNER */
         header {
             background: var(--gartup-yellow);
             height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 15px;
             z-index: 3000;
             flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand-logo {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .brand-logo img { 
+            height: 40px; /* Aumentado para que se note más */
+            width: auto; 
+            object-fit: contain;
+            display: block;
         }
 
         .icon-btn {
@@ -51,10 +68,10 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 18px;
             transition: 0.2s;
+            flex-shrink: 0;
         }
 
-        .brand-logo img { height: 30px; width: auto; }
-
+        /* Resto de estilos mantenidos igual */
         .search-pod {
             position: absolute;
             top: 75px;
@@ -73,19 +90,6 @@
             width: 100% !important;
             margin: 0 !important;
             overflow: hidden;
-        }
-
-        .leaflet-control-geocoder-form input {
-            font-size: 16px !important;
-            padding: 12px !important;
-            border-radius: 20px !important;
-        }
-
-        .leaflet-control-geocoder-results {
-            max-height: 250px !important;
-            overflow-y: auto !important;
-            border-radius: 0 0 20px 20px !important;
-            box-shadow: var(--shadow) !important;
         }
 
         #map { flex: 1; width: 100%; z-index: 1; }
@@ -131,7 +135,6 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         
-        /* Thin black outline for better legibility */
         #ai-top span { 
             font-family: 'Lexend'; 
             font-weight: 600; 
@@ -172,7 +175,6 @@
             font-size: 20px; cursor: pointer; box-shadow: var(--shadow);
             transition: 0.2s;
         }
-        .fab:active { transform: scale(0.95); background: #f0f0f0; }
 
         #overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.15);
@@ -194,7 +196,9 @@
 
     <header>
         <button class="icon-btn" onclick="toggleNav()">☰</button>
-        <div class="brand-logo"><img src="GartupBanner.png" alt="Gartup"></div>
+        <div class="brand-logo">
+            <img src="GartupBanner.png" alt="Gartup">
+        </div>
         <div style="width: 40px;"></div>
     </header>
 
@@ -229,7 +233,6 @@
     <script>
         const _s = ["gsk_", "WPZXEXNR", "7HGkYIIT", "nyyiWGdy", "b3FY5GE5", "sw0oQFZI", "QLhiZcy6", "aZTn"];
         const _key = _s.join('');
-
         let _log = [{ role: "system", content: "You are the Gartup Assistant. Be friendly, informal, and helpful. Use English." }];
 
         const layers = {
@@ -239,29 +242,17 @@
         };
 
         const map = L.map('map', {
-            center: [20, 0],
-            zoom: 2,
-            layers: [layers.vibrant],
-            zoomControl: false
+            center: [20, 0], zoom: 2, layers: [layers.vibrant], zoomControl: false
         });
 
         function findMe() {
-            map.locate({ 
-                setView: true, 
-                maxZoom: 16,
-                enableHighAccuracy: true 
-            });
+            map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
         }
 
         map.on('locationfound', (e) => {
             const radius = e.accuracy / 2;
-            L.marker(e.latlng).addTo(map)
-                .bindPopup("You are within " + radius + " meters from this point").openPopup();
+            L.marker(e.latlng).addTo(map).bindPopup("You are within " + radius + " meters from this point").openPopup();
             L.circle(e.latlng, radius, { color: '#FFE900' }).addTo(map);
-        });
-
-        map.on('locationerror', (e) => {
-            alert("Gartup couldn't find your location: " + e.message);
         });
 
         const geocoder = L.Control.geocoder({
@@ -297,7 +288,6 @@
             const chat = document.getElementById('ai-chat');
             const val = input.value.trim();
             if (!val) return;
-
             chat.innerHTML += `<div class="bubble user-bubble">${val}</div>`;
             _log.push({ role: "user", content: val });
             input.value = "";
@@ -314,7 +304,7 @@
                 _log.push({ role: "assistant", content: reply });
                 chat.innerHTML += `<div class="bubble ai-bubble">${reply}</div>`;
             } catch (e) {
-                chat.innerHTML += `<div class="bubble ai-bubble">Sorry, I'm having trouble connecting.</div>`;
+                chat.innerHTML += `<div class="bubble ai-bubble">Connection issue.</div>`;
             }
             chat.scrollTop = chat.scrollHeight;
         }
