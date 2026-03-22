@@ -29,7 +29,6 @@
             align-items: center;
         }
 
-        /* MOBILE FIRST VIEWPORT */
         .viewport {
             width: 100%;
             padding: 20px;
@@ -162,7 +161,7 @@
 
         <div class="search-engine-wrap">
             <input type="text" id="user-input" placeholder="Search concept..." inputmode="search" enterkeyhint="search">
-            <button class="go-button" onclick="executeGartup()">🔍</button>
+            <button class="go-button" onclick="initiateSearch()">🔍</button>
         </div>
 
         <div id="status" class="status-msg">Consulting...</div>
@@ -180,6 +179,7 @@
     </div>
 
     <script>
+        // --- LOGICA DE API ORIGINAL (MANTENIDA) ---
         function _retrieve() {
             const _obs = "WlhFW05SN0hHa1lJSVRueXlpV0dkeWIzRlk1R0U1c3cwb1FGWklRTGhpWmN5NmFaVG4=";
             const _pre = "Z3NrX1dQ";
@@ -187,15 +187,50 @@
             return _combined.replace("[", "X");
         }
 
-        async function executeGartup() {
+        // --- NUEVA LÓGICA SPA ---
+
+        // 1. Detectar búsqueda al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('q');
+            if (query) {
+                document.getElementById('user-input').value = query;
+                executeGartup(query);
+            }
+        });
+
+        // 2. Manejar el botón "Atrás" del navegador
+        window.addEventListener('popstate', (e) => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('q');
+            if (query) {
+                document.getElementById('user-input').value = query;
+                executeGartup(query, false); // false para no volver a empujar la URL
+            } else {
+                // Si volvemos al inicio, limpiamos todo
+                document.getElementById('user-input').value = "";
+                document.getElementById('response-frame').style.display = "none";
+            }
+        });
+
+        // Función puente para actualizar la URL
+        function initiateSearch() {
             const query = document.getElementById('user-input').value.trim();
+            if (!query) return;
+
+            // Actualizar URL sin recargar
+            const newUrl = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
+            window.history.pushState({ query }, '', newUrl);
+            
+            executeGartup(query);
+        }
+
+        async function executeGartup(query, updateUrl = true) {
             const frame = document.getElementById('response-frame');
             const output = document.getElementById('ai-text');
             const label = document.getElementById('concept-label');
             const status = document.getElementById('status');
             const resultsList = document.getElementById('web-results-list');
-
-            if (!query) return;
 
             status.style.display = "block";
             frame.style.display = "none";
@@ -249,7 +284,7 @@
 
         document.getElementById('user-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                executeGartup();
+                initiateSearch();
                 document.activeElement.blur(); 
             }
         });
