@@ -33,7 +33,7 @@
         .viewport {
             width: 100%;
             padding: 20px;
-            max-width: 680px; /* Limite para desktop */
+            max-width: 680px; 
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -46,7 +46,6 @@
         }
         .brand-space img { height: 60px; width: auto; }
 
-        /* SEARCH BAR OPTIMIZED FOR THUMBS */
         .search-engine-wrap {
             width: 100%;
             display: flex;
@@ -64,7 +63,7 @@
         #user-input {
             flex: 1;
             padding: 12px 18px;
-            font-size: 16px; /* Evita zoom automático en iOS */
+            font-size: 16px; 
             border: none;
             outline: none;
             background: transparent;
@@ -90,7 +89,6 @@
             display: none;
         }
 
-        /* AI CARD - MOBILE STYLE */
         .ai-overview {
             background: var(--card-bg);
             padding: 20px;
@@ -111,7 +109,6 @@
         .concept-title { font-family: 'Lexend'; font-size: 26px; margin-bottom: 10px; line-height: 1.2; }
         .ai-text { font-size: 15px; line-height: 1.6; color: #333; }
 
-        /* REAL WEB RESULTS */
         .results-header {
             font-size: 14px;
             font-weight: 700;
@@ -214,7 +211,7 @@
                         messages: [
                             { 
                                 role: "system", 
-                                content: "You are a professional real-world web indexer for Gartup. Provide a 3-sentence summary of the query in English. Then, provide exactly 50 REAL, DYNAMIC, and UNIQUE website sources (Wikipedia, .gov, .edu, official news, authoritative sites) that actually exist and would have info on this. All titles and snippets must be in English. Return ONLY JSON: { 'definition': '...', 'results': [{ 'title': '...', 'url': '...', 'snippet': '...' }] }" 
+                                content: "You are the Gartup Real-Web Indexer. Provide a 3-sentence summary in English. Then, provide exactly 50 REAL-WORLD, FUNCTIONAL English URLs. DO NOT GUESS URLs. Use official root domains (e.g., wikipedia.org, britannica.com, nytimes.com, bbc.com, reuters.com, gov.uk, nasa.gov). If you are not 100% sure of a specific sub-page URL, provide the verified main search result page for that site regarding the topic. Return ONLY JSON: { 'definition': '...', 'results': [{ 'title': '...', 'url': '...', 'snippet': '...' }] }" 
                             },
                             { role: "user", content: `Search: ${query}` }
                         ],
@@ -230,24 +227,23 @@
                 label.innerText = query;
                 output.innerHTML = data.definition;
 
-                // Dynamic fragment for bug-free rendering of 50 results
                 const fragment = document.createDocumentFragment();
                 data.results.forEach(res => {
-                    const resDiv = document.createElement('div');
-                    resDiv.className = 'web-result';
-                    resDiv.innerHTML = `
+                    const item = document.createElement('div');
+                    item.className = 'web-result';
+                    item.innerHTML = `
                         <span class="result-url">${res.url}</span>
                         <a href="${res.url}" target="_blank" class="result-title">${res.title}</a>
                         <div class="result-snippet">${res.snippet}</div>
                     `;
-                    fragment.appendChild(resDiv);
+                    fragment.appendChild(item);
                 });
                 resultsList.appendChild(fragment);
 
             } catch (err) {
                 status.style.display = "none";
                 frame.style.display = "block";
-                output.innerHTML = "System busy. Try again.";
+                output.innerHTML = "Indexing timeout. Please try again.";
             }
         }
 
