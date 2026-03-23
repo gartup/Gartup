@@ -1,39 +1,36 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gartup | Search</title>
-    
+    <title>Gartup | World Index</title>
     <link rel="icon" type="image/png" href="GartupLogo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lexend:wght@700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Lexend:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gartup-yellow: #FFE900;
-            --gartup-black: #111111;
-            --bg-color: #ffffff;
+            --accent: #FFE900;
+            --bg: #ffffff;
+            --text: #111111;
+            --border: #f0f0f2;
+            --card-bg: #ffffff;
             --link-blue: #1a0dab;
-            --snippet-gray: #4d5156;
-            --card-bg: #f8f9fa;
+            --anim-speed: 0.4s;
         }
 
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: 'Inter', sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
+        [data-theme="dark"] {
+            --bg: #0a0a0b;
+            --text: #f5f5f7;
+            --border: #1f1f22;
+            --card-bg: #161618;
+            --link-blue: #8ab4f8;
         }
+
+        * { transition: background 0.3s, color 0.3s; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        body { 
-            background: var(--bg-color); 
-            color: var(--gartup-black); 
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
+        body {
+            margin: 0; background-color: var(--bg); color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden; min-height: 100vh;
         }
 
         /* Animaciones */
@@ -42,301 +39,248 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
+        .fade-in { animation: fadeInUp var(--anim-speed) ease forwards; }
+
+        .decoration-line {
+            position: fixed; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--accent), #ff9100, var(--accent));
+            z-index: 1100;
         }
 
-        .viewport {
-            width: 100%;
-            padding: 15px;
-            max-width: 680px; 
-            display: flex;
-            flex-direction: column;
-            transition: all 0.4s ease;
+        /* Header / Nav */
+        header {
+            width: 100%; padding: 15px 20px; display: flex; align-items: center;
+            justify-content: space-between; position: fixed; top: 0; z-index: 1000;
+            background: var(--bg); border-bottom: 1px solid transparent;
         }
 
-        /* Cabecera / Logo */
-        .brand-space { 
-            margin-top: 8vh;
-            margin-bottom: 30px; 
-            text-align: center;
-            transition: all 0.4s ease;
-        }
-        .brand-space img { height: 50px; width: auto; }
+        body.searching header { border-bottom-color: var(--border); backdrop-filter: blur(10px); background: var(--glass); }
 
-        /* Contenedor del buscador */
-        .search-engine-wrap {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            background: #ffffff;
-            border-radius: 100px;
-            padding: 5px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
-            position: sticky;
-            top: 15px;
-            z-index: 1000;
-            border: 1px solid #eee;
-            transition: all 0.3s ease;
+        .nav-left { display: flex; align-items: center; gap: 15px; }
+        .nav-logo-small { height: 28px; cursor: pointer; display: none; }
+        body.searching .nav-logo-small { display: block; }
+
+        /* Search Bar Responsive */
+        .search-container {
+            width: 100%; max-width: 600px; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
 
-        #user-input {
-            flex: 1;
-            padding: 12px 15px;
-            font-size: 16px; 
-            border: none;
-            outline: none;
-            background: transparent;
+        body.home .search-container { margin: 0 auto; }
+        body.searching .search-container { max-width: 400px; margin: 0; position: absolute; left: 50%; transform: translateX(-50%); }
+
+        .search-bar {
+            background: var(--card-bg); border: 2px solid var(--border);
+            padding: 6px 10px 6px 18px; border-radius: 50px; 
+            display: flex; align-items: center; width: 100%;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+        }
+        .search-bar:focus-within { border-color: var(--accent); }
+        
+        input#user-input { 
+            flex: 1; border: none; outline: none; background: transparent; 
+            font-size: 16px; color: var(--text); padding: 8px 0; width: 100%;
         }
 
-        .go-button {
-            background: var(--gartup-yellow);
-            border: none;
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: transform 0.2s;
-        }
-        .go-button:active { transform: scale(0.9); }
-
-        /* Estado cuando hay resultados (Modo Compacto) */
-        body.searching .brand-space { 
-            margin-top: 0;
-            margin-bottom: 15px;
-            transform: scale(0.8);
+        .btn-search { 
+            background: var(--accent); color: #000; border: none; 
+            padding: 8px 20px; border-radius: 30px; font-weight: 700; cursor: pointer; font-size: 14px;
         }
 
-        /* Resultados */
-        #response-frame {
-            width: 100%;
-            display: none;
-            animation: fadeInUp 0.6s ease forwards;
+        /* Home Layout */
+        .main-home {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 20px; text-align: center;
+        }
+        .main-logo { width: 280px; max-width: 80%; margin-bottom: 35px; cursor: pointer; }
+
+        /* Article Layout */
+        #response-frame { 
+            width: 100%; max-width: 900px; margin: 90px auto 40px; 
+            padding: 0 15px; display: none; 
+        }
+        
+        .article-card { 
+            background: var(--card-bg); border: 1px solid var(--border);
+            padding: 30px; border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
         }
 
-        .ai-overview {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 24px;
-            margin-bottom: 25px;
-            border: 1px solid #f0f0f0;
+        .article-title { font-family: 'Lexend'; font-size: 32px; margin-bottom: 20px; line-height: 1.2; }
+        .article-body { font-size: 17px; line-height: 1.7; opacity: 0.9; }
+        .article-body p { margin-bottom: 20px; }
+        .article-body a { color: var(--link-blue); text-decoration: none; font-weight: 600; }
+
+        .nodes-label { font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 2px; margin: 40px 0 20px; display: block; text-align: center;}
+
+        .related-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 12px; width: 100%; padding-bottom: 40px;
+        }
+        .node-item {
+            background: var(--card-bg); padding: 15px; border-radius: 18px;
+            border: 1px solid var(--border); cursor: pointer; text-align: center; font-size: 14px; font-weight: 700;
         }
 
-        .ai-badge {
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #999;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-            display: block;
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            body.searching .search-container { max-width: 180px; left: 60%; }
+            .btn-search { display: none; } /* Hide text on mobile search bar to save space */
+            .article-card { padding: 25px; border-radius: 20px; }
+            .article-title { font-size: 28px; }
+            .main-logo { width: 220px; }
         }
 
-        .concept-title { 
-            font-family: 'Lexend'; 
-            font-size: 24px; 
-            margin-bottom: 12px; 
-            line-height: 1.2; 
-            text-transform: capitalize;
-        }
+        .loader { display: none; text-align: center; padding: 150px 20px; font-weight: 800; opacity: 0.5; font-size: 14px; letter-spacing: 2px; }
 
-        .ai-text { font-size: 15px; line-height: 1.6; color: #333; }
+        body.searching .main-home { display: none; }
+        body.searching #response-frame { display: block; }
+        body.home #response-frame { display: none; }
+        body.home .main-home { display: flex; }
 
-        .results-header {
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #888;
-            text-transform: uppercase;
-            padding-left: 5px;
-        }
-
-        .web-result {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #fff;
-            border-radius: 16px;
-            transition: background 0.2s;
-        }
-        .web-result:active { background: #fdfdfd; }
-
-        .result-url {
-            font-size: 11px;
-            color: #006621;
-            margin-bottom: 4px;
-            display: block;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .result-title {
-            font-size: 17px;
-            color: var(--link-blue);
-            text-decoration: none;
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            line-height: 1.3;
-        }
-
-        .result-snippet {
-            font-size: 14px;
-            line-height: 1.5;
-            color: var(--snippet-gray);
-        }
-
-        .status-msg { 
-            display: none; 
-            text-align: center;
-            margin-top: 40px; 
-            color: #888; 
-            font-size: 14px; 
-            animation: pulse 1.5s infinite;
-        }
-
-        /* Ajustes Mobile */
-        @media (max-width: 480px) {
-            .viewport { padding: 10px; }
-            .concept-title { font-size: 22px; }
-            .brand-space { margin-top: 5vh; }
-            .search-engine-wrap { top: 10px; }
-        }
     </style>
 </head>
-<body>
+<body id="body" class="home">
 
-    <div class="viewport">
-        <div class="brand-space" id="brand">
-            <img src="GartupBanner.png" alt="Gartup">
+    <div class="decoration-line"></div>
+
+    <header>
+        <div class="nav-left">
+            <img src="GartupBanner.png" alt="Gartup" class="nav-logo-small" onclick="goHome()">
         </div>
-
-        <div class="search-engine-wrap" id="search-bar">
-            <input type="text" id="user-input" placeholder="¿Qué quieres saber?" inputmode="search" enterkeyhint="search">
-            <button class="go-button" onclick="initiateSearch()">🔍</button>
-        </div>
-
-        <div id="status" class="status-msg">Consultando el índice global de Gartup...</div>
-
-        <div id="response-frame">
-            <div class="ai-overview">
-                <span class="ai-badge">Resumen Gartup</span>
-                <h1 id="concept-label" class="concept-title"></h1>
-                <div id="ai-text" class="ai-text"></div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" id="user-input" placeholder="Search..." autocomplete="off">
+                <button class="btn-search" onclick="handleSearchClick()">Search</button>
             </div>
-            
-            <h2 class="results-header">Fuentes Verificadas</h2>
-            <div id="web-results-list"></div>
         </div>
+
+        <span class="theme-btn" onclick="toggleTheme()" style="cursor:pointer; opacity:0.6;">🌓</span>
+    </header>
+
+    <main class="main-home fade-in">
+        <img src="GartupBanner.png" alt="Gartup" class="main-logo" onclick="goHome()">
+    </main>
+
+    <div id="status" class="loader">INDEXING...</div>
+
+    <div id="response-frame" class="fade-in">
+        <div class="article-card">
+            <h1 id="article-title" class="article-title"></h1>
+            <div id="article-content" class="article-body"></div>
+        </div>
+        
+        <span class="nodes-label">Related Nodes</span>
+        <div id="related-grid" class="related-grid"></div>
     </div>
 
     <script>
-        function _retrieve() {
-            const _obs = "WlhFW05SN0hHa1lJSVRueXlpV0dkeWIzRlk1R0U1c3cwb1FGWklRTGhpWmN5NmFaVG4=";
-            const _pre = "Z3NrX1dQ";
-            const _combined = atob(_pre + _obs);
-            return _combined.replace("[", "X");
+        function toggleTheme() {
+            const b = document.body;
+            b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const query = params.get('q');
-            if (query) {
-                document.getElementById('user-input').value = query;
-                executeGartup(query);
-            }
-        });
-
-        window.addEventListener('popstate', (e) => {
-            const params = new URLSearchParams(window.location.search);
-            const query = params.get('q');
-            if (query) {
-                document.getElementById('user-input').value = query;
-                executeGartup(query, false);
-            } else {
-                location.reload(); // Volver al inicio limpio
-            }
-        });
-
-        function initiateSearch() {
-            const query = document.getElementById('user-input').value.trim();
-            if (!query) return;
-
-            const newUrl = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
-            window.history.pushState({ query }, '', newUrl);
-            executeGartup(query);
+        function goHome() {
+            window.history.pushState({}, '', window.location.origin + window.location.pathname);
+            document.body.className = "home";
+            document.getElementById('status').style.display = "none";
+            document.getElementById('user-input').value = "";
+            document.title = "Gartup | World Index";
         }
 
-        async function executeGartup(query) {
-            const frame = document.getElementById('response-frame');
-            const output = document.getElementById('ai-text');
-            const label = document.getElementById('concept-label');
+        function handleSearchClick() {
+            const q = document.getElementById('user-input').value.trim();
+            if (q) nativeSearch(q);
+        }
+
+        async function nativeSearch(query) {
+            const body = document.body;
             const status = document.getElementById('status');
-            const resultsList = document.getElementById('web-results-list');
+            const frame = document.getElementById('response-frame');
+            const contentElem = document.getElementById('article-content');
+            const gridElem = document.getElementById('related-grid');
 
-            // UI Feedback
-            document.body.classList.add('searching');
+            const cleanQuery = query.replace(/_/g, ' ');
+            const newUrl = window.location.origin + window.location.pathname + '?q=' + encodeURIComponent(cleanQuery);
+            window.history.pushState({ query: cleanQuery }, '', newUrl);
+            
+            body.className = "searching";
             status.style.display = "block";
             frame.style.display = "none";
-            resultsList.innerHTML = ""; 
+            
             window.scrollTo({top: 0, behavior: 'smooth'});
 
             try {
-                const call = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${_retrieve()}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        model: "llama-3.3-70b-versatile", 
-                        messages: [
-                            { 
-                                role: "system", 
-                                content: "You are Gartup. Provide a clear 3-sentence summary in Spanish. Then, list 10-15 real high-authority URLs (Wikipedia, news, gov, edu) related to the topic. Return ONLY JSON: { 'definition': '...', 'results': [{ 'title': '...', 'url': '...', 'snippet': '...' }] }" 
-                            },
-                            { role: "user", content: `Concepto: ${query}` }
-                        ],
-                        response_format: { type: "json_object" }
-                    })
+                const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&format=json&origin=*`);
+                const searchData = await searchRes.json();
+                
+                if (!searchData.query.search.length) throw new Error();
+                
+                const bestTitle = searchData.query.search[0].title;
+                document.title = `${bestTitle} - Gartup`;
+
+                const contentRes = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(bestTitle)}&prop=text&format=json&origin=*&disableeditsection=1&mobileformat=1`);
+                const contentData = await contentRes.json();
+                
+                document.getElementById('article-title').innerText = bestTitle;
+                
+                let container = document.createElement('div');
+                container.innerHTML = contentData.parse.text["*"];
+                
+                // Limpieza agresiva para Gartup nativo
+                const cleanSelectors = '.infobox, .ambox, .navbox, .metadata, .mw-editsection, .reflist, .reference, .hatnote, .sidebar, .vertical-navbox';
+                container.querySelectorAll(cleanSelectors).forEach(el => el.remove());
+
+                container.querySelectorAll('a').forEach(a => {
+                    const href = a.getAttribute('href');
+                    if (href && href.startsWith('/wiki/')) {
+                        const target = href.replace('/wiki/', '').replace(/_/g, ' ');
+                        a.setAttribute('href', `javascript:nativeSearch('${target}')`);
+                    } else if (href && (href.startsWith('http') || href.startsWith('//'))) {
+                        a.setAttribute('target', '_blank');
+                    } else {
+                        a.removeAttribute('href');
+                    }
                 });
 
-                const json = await call.json();
-                const data = JSON.parse(json.choices[0].message.content);
+                contentElem.innerHTML = container.innerHTML;
+
+                // Cargar nodos relacionados
+                gridElem.innerHTML = "";
+                searchData.query.search.slice(1, 11).forEach(item => {
+                    const node = document.createElement('div');
+                    node.className = 'node-item';
+                    node.onclick = () => nativeSearch(item.title);
+                    node.innerText = item.title;
+                    gridElem.appendChild(node);
+                });
 
                 status.style.display = "none";
                 frame.style.display = "block";
-                label.innerText = query;
-                output.innerHTML = data.definition;
-
-                data.results.forEach(res => {
-                    const item = document.createElement('div');
-                    item.className = 'web-result';
-                    item.innerHTML = `
-                        <span class="result-url">${res.url}</span>
-                        <a href="${res.url}" target="_blank" class="result-title">${res.title}</a>
-                        <div class="result-snippet">${res.snippet}</div>
-                    `;
-                    resultsList.appendChild(item);
-                });
+                // Trigger animation
+                frame.classList.remove('fade-in');
+                void frame.offsetWidth; 
+                frame.classList.add('fade-in');
 
             } catch (err) {
                 status.style.display = "none";
                 frame.style.display = "block";
-                output.innerHTML = "Error al conectar con el índice. Inténtalo de nuevo.";
+                document.getElementById('article-title').innerText = "Not Found";
+                contentElem.innerHTML = "This node is currently offline.";
             }
         }
 
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                initiateSearch();
-                document.activeElement.blur(); 
-            }
+        window.onpopstate = () => {
+            const q = new URLSearchParams(window.location.search).get('q');
+            q ? nativeSearch(q) : goHome();
+        };
+
+        window.onload = () => {
+            const q = new URLSearchParams(window.location.search).get('q');
+            if (q) nativeSearch(q);
+        };
+
+        document.getElementById('user-input').addEventListener('keypress', (e) => { 
+            if (e.key === 'Enter') handleSearchClick(); 
         });
     </script>
 </body>
