@@ -14,7 +14,6 @@
             --border: #f0f0f2;
             --card-bg: #ffffff;
             --verified-blue: #0095f6;
-            --anim-speed: 0.4s;
         }
 
         [data-theme="dark"] {
@@ -101,7 +100,7 @@
     <header>
         <div class="logo-area" onclick="location.reload()">
             <img src="GartupBanner.png" alt="Gartup">
-            <span>Persons</span>
+            <span>Persons Index</span>
         </div>
         <div class="search-box">
             <input type="text" id="search-input" placeholder="Search person..." onkeypress="handleKey(event)">
@@ -109,28 +108,34 @@
     </header>
 
     <div class="container">
-        <div id="loader" class="loader">SEARCHING THE REGISTRY...</div>
+        <div id="loader" class="loader">INDEXING PERSON...</div>
 
         <div id="person-card" class="person-card">
             <div id="tag-box"></div>
             <img id="p-img" class="profile-img" src="" alt="Profile">
             <div class="name-wrapper">
                 <h1 id="p-name" class="person-name"></h1>
-                <img id="verified-badge" src="Verificado.png" class="verified-icon" title="Verified Figure" style="display:none;">
+                <img id="verified-badge" src="Verificado.png" class="verified-icon" title="Verified Personal Profile" style="display:none;">
             </div>
             <div id="p-bio" class="person-bio"></div>
         </div>
     </div>
 
     <script>
-        // Lista expandida de verificados
+        // Lista Maestra de Verificados (Gartup Elite)
         const topFigures = [
-            "Musguito", "Einstein", "Newton", "Tesla", "Curie", "Hawking", "Darwin", "Galileo",
-            "Steve Jobs", "Elon Musk", "Bill Gates", "Zuckerberg", "Jeff Bezos", "Ada Lovelace",
-            "Julius Caesar", "Napoleon", "Churchill", "Gandhi", "Lincoln", "Alexander the Great",
-            "Leonardo da Vinci", "Shakespeare", "Picasso", "Van Gogh", "Michelangelo", "Mozart",
-            "Michael Jackson", "Freddie Mercury", "Taylor Swift", "Cristiano Ronaldo", "Messi"
+            "Musguito", "Einstein", "Newton", "Tesla", "Hawking", "Curie", "Darwin",
+            "Steve Jobs", "Elon Musk", "Bill Gates", "Zuckerberg", "Jeff Bezos",
+            "MrBeast", "PewDiePie", "Ibai", "Auronplay", "Rubius",
+            "Cristiano Ronaldo", "Messi", "Nadal", "Michael Jordan", "LeBron James", "Pelé", "Maradona",
+            "Michael Jackson", "Freddie Mercury", "Taylor Swift", "Beyoncé", "Shakira", "Elvis Presley",
+            "Tom Cruise", "Robert Downey Jr.", "Scarlett Johansson", "Morgan Freeman", "The Rock",
+            "Julius Caesar", "Napoleon", "Gandhi", "Lincoln", "Churchill", "Cleopatra",
+            "Leonardo da Vinci", "Shakespeare", "Picasso", "Van Gogh"
         ];
+
+        // Palabras clave para filtrar NO-PERSONAS
+        const nonPersonKeywords = ["company", "multinational", "organization", "technology", "software", "operating system", "city", "country", "brand", "firm", "search engine", "website"];
 
         function handleKey(e) {
             if (e.key === 'Enter') searchPerson(e.target.value);
@@ -147,17 +152,17 @@
 
             const query = name.toLowerCase().trim();
 
-            // CASO ESPECIAL: MUSGUITO
+            // CASO MAESTRO: MUSGUITO
             if (query === "musguito") {
                 setTimeout(() => {
                     document.getElementById('p-name').innerText = "Musguito";
                     document.getElementById('p-bio').innerText = "Musguito is a recognized Minecraft content creator, known for exploring unique world seeds and sharing creative gameplay within the community.";
-                    document.getElementById('p-img').src = "GartupLogo.png"; // Puedes cambiarlo por tu avatar
+                    document.getElementById('p-img').src = "Musguito.png"; 
                     document.getElementById('tag-box').innerHTML = `<span class="tag">Content Creator</span>`;
                     badge.style.display = "block";
                     loader.style.display = "none";
                     card.style.display = "block";
-                }, 500);
+                }, 400);
                 return;
             }
 
@@ -165,14 +170,24 @@
                 const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);
                 const data = await res.json();
 
-                if (data.title === "Not found") throw new Error();
+                if (data.title === "Not found") throw new Error("not_found");
+
+                // FILTRO DE PERSONAS: Analizar descripción
+                const desc = (data.description || "").toLowerCase();
+                const isNonPerson = nonPersonKeywords.some(keyword => desc.includes(keyword));
+
+                if (isNonPerson) {
+                    loader.innerText = "Only personal profiles are indexed here.";
+                    return;
+                }
 
                 document.getElementById('p-name').innerText = data.title;
                 document.getElementById('p-bio').innerHTML = data.extract_html || data.extract;
                 document.getElementById('p-img').src = data.originalimage ? data.originalimage.source : 'https://via.placeholder.com/150';
                 document.getElementById('tag-box').innerHTML = `<span class="tag">${data.description || 'Person'}</span>`;
 
-                if (topFigures.some(f => data.title.includes(f)) || data.pageid < 100000) {
+                // Verificar si está en la lista de elite o es una página muy importante (ID bajo)
+                if (topFigures.some(f => data.title.includes(f)) || data.pageid < 80000) {
                     badge.style.display = "block";
                 }
 
