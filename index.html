@@ -15,6 +15,8 @@
             --card-bg: #ffffff;
             --link-blue: #1a0dab;
             --anim-speed: 0.4s;
+            --bg-muted: #f5f5f7;
+            --verified-color: #0071e3;
         }
 
         [data-theme="dark"] {
@@ -23,6 +25,8 @@
             --border: #1f1f22;
             --card-bg: #161618;
             --link-blue: #8ab4f8;
+            --bg-muted: #111113;
+            --verified-color: #2997ff;
         }
 
         * { transition: background 0.3s, color 0.3s; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -124,6 +128,41 @@
             border: 1px solid var(--border); cursor: pointer; text-align: center; font-size: 14px; font-weight: 700;
         }
 
+        /* --- NUEVOS ESTILOS PARA LA SECCIÓN DE POSTS DE LA COMUNIDAD --- */
+        .posts-section {
+            background: var(--card-bg); border: 1px solid var(--border);
+            padding: 30px; border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            margin-top: 30px; margin-bottom: 40px;
+        }
+        .posts-header { font-family: 'Lexend'; font-size: 22px; margin-top: 0; margin-bottom: 20px; }
+        .post-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+        .post-form-row { display: flex; gap: 12px; }
+        .post-form input, .post-form textarea {
+            background: var(--bg-muted); border: 2px solid var(--border);
+            padding: 12px 16px; border-radius: 14px; font-family: inherit;
+            font-size: 15px; color: var(--text); outline: none; width: 100%;
+        }
+        .post-form input:focus, .post-form textarea:focus { border-color: var(--accent); }
+        .btn-submit-post {
+            background: var(--accent); color: #111111; border: none;
+            padding: 12px 24px; border-radius: 14px; font-weight: 700;
+            font-size: 15px; font-family: inherit; cursor: pointer; align-self: flex-end;
+        }
+        .btn-submit-post:hover { opacity: 0.9; }
+        .posts-feed { display: flex; flex-direction: column; gap: 14px; max-height: 400px; overflow-y: auto; }
+        .post-card {
+            background: var(--bg-muted); border: 1px solid var(--border);
+            border-radius: 18px; padding: 16px; display: flex; gap: 12px; align-items: flex-start;
+            animation: fadeInUp 0.3s ease;
+        }
+        .post-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--card-bg); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); font-size: 18px; flex-shrink: 0; }
+        .post-details { flex: 1; }
+        .post-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+        .post-author { font-weight: 700; font-size: 15px; color: #ff9100; }
+        .post-time { font-size: 11px; opacity: 0.5; margin-left: auto; }
+        .post-body { font-size: 14px; line-height: 1.5; opacity: 0.9; white-space: pre-wrap; }
+        .no-posts { text-align: center; opacity: 0.5; padding: 20px; font-size: 14px; }
+
         /* Mobile specific adjustments */
         @media (max-width: 768px) {
             body.searching .search-container { max-width: 180px; left: 60%; }
@@ -131,6 +170,8 @@
             .article-card { padding: 25px; border-radius: 20px; }
             .article-title { font-size: 28px; }
             .main-logo { width: 220px; }
+            .posts-section { padding: 20px; border-radius: 20px; }
+            .post-form-row { flex-direction: column; gap: 12px; }
         }
 
         .loader { display: none; text-align: center; padding: 150px 20px; font-weight: 800; opacity: 0.5; font-size: 14px; letter-spacing: 2px; }
@@ -168,22 +209,45 @@
     <div id="status" class="loader">INDEXING...</div>
 
     <div id="response-frame" class="fade-in">
+        <!-- Tarjeta del Artículo -->
         <div class="article-card">
             <h1 id="article-title" class="article-title"></h1>
             <div id="article-content" class="article-body"></div>
         </div>
         
+        <!-- Nodos Relacionados -->
         <span class="nodes-label">Related Nodes</span>
         <div id="related-grid" class="related-grid"></div>
+
+        <!-- NUEVA SECCIÓN: Muro de Posts del Nodo de Wikipedia -->
+        <div class="posts-section">
+            <h2 class="posts-header">Discusion Global del Index</h2>
+            <form class="post-form" onsubmit="submitPost(event)">
+                <div class="post-form-row">
+                    <input type="text" id="post-author" placeholder="Tu Apodo" required autocomplete="off">
+                </div>
+                <textarea id="post-text" placeholder="Escribe un post o comentario sobre este artículo..." rows="3" required></textarea>
+                <button type="submit" class="btn-submit-post" id="post-btn">Publicar Comentario</button>
+            </form>
+            <div class="posts-feed" id="posts-feed">
+                <div class="no-posts">Cargando comentarios en vivo...</div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // URL global real asignada a tu proyecto
+        const FIREBASE_DB_URL = "https://gartup-dbe60-default-rtdb.firebaseio.com/";
+        let currentActiveWikiTitle = ""; // Guarda el nombre del nodo activo para agrupar comentarios
+        let globalInterval = null;
+
         function toggleTheme() {
             const b = document.body;
             b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
         }
 
         function goHome() {
+            if (globalInterval) clearInterval(globalInterval);
             window.history.pushState({}, '', window.location.origin + window.location.pathname);
             document.body.className = "home";
             document.getElementById('status').style.display = "none";
@@ -197,6 +261,7 @@
         }
 
         async function nativeSearch(query) {
+            if (globalInterval) clearInterval(globalInterval);
             const body = document.body;
             const status = document.getElementById('status');
             const frame = document.getElementById('response-frame');
@@ -221,6 +286,7 @@
                 
                 const bestTitle = searchData.query.search[0].title;
                 document.title = `${bestTitle} - Gartup`;
+                currentActiveWikiTitle = bestTitle; // Asignar título limpio para los comentarios
 
                 const contentRes = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(bestTitle)}&prop=text&format=json&origin=*&disableeditsection=1&mobileformat=1`);
                 const contentData = await contentRes.json();
@@ -282,12 +348,101 @@
                 void frame.offsetWidth; 
                 frame.classList.add('fade-in');
 
+                // Cargar comentarios asociados al artículo y sincronizar bucle
+                loadWikiPosts();
+                globalInterval = setInterval(loadWikiPosts, 9000);
+
             } catch (err) {
                 status.style.display = "none";
                 frame.style.display = "block";
                 document.getElementById('article-title').innerText = "Not Found";
                 contentElem.innerHTML = "This node is currently offline or does not exist in the index.";
+                document.getElementById('posts-feed').innerHTML = '<div class="no-posts">No hay comentarios disponibles para este nodo.</div>';
             }
+        }
+
+        // NUEVA FUNCIÓN: Generar identificador seguro para Firebase (quita espacios y puntos del título de la Wiki)
+        function getFirebaseSafePath(title) {
+            return encodeURIComponent(title).replace(/\./g, '%2E');
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>"']/g, function(match) {
+                const mask = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
+                return mask[match];
+            });
+        }
+
+        // NUEVA FUNCIÓN: Descargar posts en vivo asociados al artículo activo
+        function loadWikiPosts() {
+            if (!currentActiveWikiTitle) return;
+            const path = getFirebaseSafePath(currentActiveWikiTitle);
+
+            fetch(`${FIREBASE_DB_URL}wiki_nodes/${path}.json`)
+            .then(res => res.json())
+            .then(data => {
+                const feed = document.getElementById('posts-feed');
+                if (!data) {
+                    feed.innerHTML = '<div class="no-posts">Nadie ha comentado sobre este artículo todavía. ¡Sé el primero!</div>';
+                    return;
+                }
+
+                const posts = Object.keys(data).map(key => data[key]).reverse();
+                feed.innerHTML = posts.map(p => `
+                    <div class="post-card">
+                        <div class="post-avatar">💬</div>
+                        <div class="post-details">
+                            <div class="post-meta">
+                                <span class="post-author">${escapeHTML(p.name)}</span>
+                                <span class="post-time">${p.time}</span>
+                            </div>
+                            <div class="post-body">${escapeHTML(p.text)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(err => console.error("Error al sincronizar comentarios:", err));
+        }
+
+        // NUEVA FUNCIÓN: Insertar nuevo post a la base de datos de Firebase
+        function submitPost(e) {
+            e.preventDefault();
+            const authorInput = document.getElementById('post-author');
+            const textInput = document.getElementById('post-text');
+            const btn = document.getElementById('post-btn');
+
+            const name = authorInput.value.trim();
+            const text = textInput.value.trim();
+
+            if (!name || !text || !currentActiveWikiTitle) return;
+
+            btn.disabled = true;
+            btn.innerText = "Publicando...";
+
+            const newPost = {
+                name: name,
+                text: text,
+                time: new Date().toLocaleString()
+            };
+
+            const path = getFirebaseSafePath(currentActiveWikiTitle);
+
+            fetch(`${FIREBASE_DB_URL}wiki_nodes/${path}.json`, {
+                method: 'POST',
+                body: JSON.stringify(newPost),
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(() => {
+                textInput.value = "";
+                btn.disabled = false;
+                btn.innerText = "Publicar Comentario";
+                loadWikiPosts(); // Refrescar instantáneamente
+            })
+            .catch(err => {
+                alert("Error al subir el post.");
+                btn.disabled = false;
+                btn.innerText = "Publicar Comentario";
+            });
         }
 
         window.onpopstate = () => {
