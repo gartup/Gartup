@@ -128,7 +128,7 @@
             border: 1px solid var(--border); cursor: pointer; text-align: center; font-size: 14px; font-weight: 700;
         }
 
-        /* --- NUEVOS ESTILOS PARA LA SECCIÓN DE POSTS DE LA COMUNIDAD --- */
+        /* --- COMMUNITY DISCUSSION POSTS LAYOUT --- */
         .posts-section {
             background: var(--card-bg); border: 1px solid var(--border);
             padding: 30px; border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
@@ -209,36 +209,36 @@
     <div id="status" class="loader">INDEXING...</div>
 
     <div id="response-frame" class="fade-in">
-        <!-- Tarjeta del Artículo -->
+        <!-- Wikipedia Article Structure -->
         <div class="article-card">
             <h1 id="article-title" class="article-title"></h1>
             <div id="article-content" class="article-body"></div>
         </div>
         
-        <!-- Nodos Relacionados -->
+        <!-- Related Grid -->
         <span class="nodes-label">Related Nodes</span>
         <div id="related-grid" class="related-grid"></div>
 
-        <!-- NUEVA SECCIÓN: Muro de Posts del Nodo de Wikipedia -->
+        <!-- INTEGRATED SECTION: Global Discussions regarding the Active Node -->
         <div class="posts-section">
-            <h2 class="posts-header">Discusion Global del Index</h2>
+            <h2 class="posts-header">Global Node Discussion</h2>
             <form class="post-form" onsubmit="submitPost(event)">
                 <div class="post-form-row">
-                    <input type="text" id="post-author" placeholder="Tu Apodo" required autocomplete="off">
+                    <input type="text" id="post-author" placeholder="Your Handle / Alias" required autocomplete="off">
                 </div>
-                <textarea id="post-text" placeholder="Escribe un post o comentario sobre este artículo..." rows="3" required></textarea>
-                <button type="submit" class="btn-submit-post" id="post-btn">Publicar Comentario</button>
+                <textarea id="post-text" placeholder="Write an index post or insight about this article..." rows="3" required></textarea>
+                <button type="submit" class="btn-submit-post" id="post-btn">Publish Post</button>
             </form>
             <div class="posts-feed" id="posts-feed">
-                <div class="no-posts">Cargando comentarios en vivo...</div>
+                <div class="no-posts">Streaming context feed from cloud node...</div>
             </div>
         </div>
     </div>
 
     <script>
-        // URL global real asignada a tu proyecto
+        // Live cloud network environment for Gartup
         const FIREBASE_DB_URL = "https://gartup-dbe60-default-rtdb.firebaseio.com/";
-        let currentActiveWikiTitle = ""; // Guarda el nombre del nodo activo para agrupar comentarios
+        let currentActiveWikiTitle = ""; 
         let globalInterval = null;
 
         function toggleTheme() {
@@ -286,7 +286,7 @@
                 
                 const bestTitle = searchData.query.search[0].title;
                 document.title = `${bestTitle} - Gartup`;
-                currentActiveWikiTitle = bestTitle; // Asignar título limpio para los comentarios
+                currentActiveWikiTitle = bestTitle; 
 
                 const contentRes = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(bestTitle)}&prop=text&format=json&origin=*&disableeditsection=1&mobileformat=1`);
                 const contentData = await contentRes.json();
@@ -348,7 +348,7 @@
                 void frame.offsetWidth; 
                 frame.classList.add('fade-in');
 
-                // Cargar comentarios asociados al artículo y sincronizar bucle
+                // Sync and load node discussion posts via interval logic
                 loadWikiPosts();
                 globalInterval = setInterval(loadWikiPosts, 9000);
 
@@ -357,11 +357,11 @@
                 frame.style.display = "block";
                 document.getElementById('article-title').innerText = "Not Found";
                 contentElem.innerHTML = "This node is currently offline or does not exist in the index.";
-                document.getElementById('posts-feed').innerHTML = '<div class="no-posts">No hay comentarios disponibles para este nodo.</div>';
+                document.getElementById('posts-feed').innerHTML = '<div class="no-posts">No discussion available for offline nodes.</div>';
             }
         }
 
-        // NUEVA FUNCIÓN: Generar identificador seguro para Firebase (quita espacios y puntos del título de la Wiki)
+        // Sanitizing titles safely for clean object tree sorting in Firebase
         function getFirebaseSafePath(title) {
             return encodeURIComponent(title).replace(/\./g, '%2E');
         }
@@ -373,7 +373,7 @@
             });
         }
 
-        // NUEVA FUNCIÓN: Descargar posts en vivo asociados al artículo activo
+        // Live streaming of global comments based on active search index
         function loadWikiPosts() {
             if (!currentActiveWikiTitle) return;
             const path = getFirebaseSafePath(currentActiveWikiTitle);
@@ -383,14 +383,14 @@
             .then(data => {
                 const feed = document.getElementById('posts-feed');
                 if (!data) {
-                    feed.innerHTML = '<div class="no-posts">Nadie ha comentado sobre este artículo todavía. ¡Sé el primero!</div>';
+                    feed.innerHTML = '<div class="no-posts">No global posts on this index node yet. Be the first to share an insight!</div>';
                     return;
                 }
 
                 const posts = Object.keys(data).map(key => data[key]).reverse();
                 feed.innerHTML = posts.map(p => `
                     <div class="post-card">
-                        <div class="post-avatar">💬</div>
+                        <div class="post-avatar">✉️</div>
                         <div class="post-details">
                             <div class="post-meta">
                                 <span class="post-author">${escapeHTML(p.name)}</span>
@@ -401,10 +401,10 @@
                     </div>
                 `).join('');
             })
-            .catch(err => console.error("Error al sincronizar comentarios:", err));
+            .catch(err => console.error("Index synchronization error:", err));
         }
 
-        // NUEVA FUNCIÓN: Insertar nuevo post a la base de datos de Firebase
+        // Processing and transmitting fresh posts out to the global database
         function submitPost(e) {
             e.preventDefault();
             const authorInput = document.getElementById('post-author');
@@ -417,7 +417,7 @@
             if (!name || !text || !currentActiveWikiTitle) return;
 
             btn.disabled = true;
-            btn.innerText = "Publicando...";
+            btn.innerText = "Publishing...";
 
             const newPost = {
                 name: name,
@@ -435,13 +435,13 @@
             .then(() => {
                 textInput.value = "";
                 btn.disabled = false;
-                btn.innerText = "Publicar Comentario";
-                loadWikiPosts(); // Refrescar instantáneamente
+                btn.innerText = "Publish Post";
+                loadWikiPosts(); 
             })
             .catch(err => {
-                alert("Error al subir el post.");
+                alert("Transmission error. Failed to dispatch post data.");
                 btn.disabled = false;
-                btn.innerText = "Publicar Comentario";
+                btn.innerText = "Publish Post";
             });
         }
 
